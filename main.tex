@@ -1,0 +1,534 @@
+\documentclass[12pt,a4paper]{article}
+
+% ------------------------------------------------------------
+% Packages
+% ------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1,T5]{fontenc}
+\usepackage[english]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{microtype}
+
+% ------------------------------------------------------------
+% Editable report information
+% ------------------------------------------------------------
+\newcommand{\coursename}{Digital Signal Processing}
+\newcommand{\coursecode}{CO2036}
+\newcommand{\semester}{HK261}
+\newcommand{\labtitle}{LAB 4 -- Z-TRANSFORM AND CONVOLUTION}
+\newcommand{\studentone}{Nguyễn Văn Hoàng Phát -- 2352896}
+
+% ------------------------------------------------------------
+% Formatting
+% ------------------------------------------------------------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\coursename}
+\rhead{Lab 4}
+\cfoot{\thepage}
+\setlength{\headheight}{15pt}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+% ------------------------------------------------------------
+% Scilab listing style
+% ------------------------------------------------------------
+\lstdefinelanguage{Scilab}{
+  morekeywords={
+    function,endfunction,if,then,else,end,for,while,break,continue,
+    select,case,otherwise,return,exec,clear,clc,disp,mprintf,
+    zeros,ones,length,min,max,size,sum,abs,floor,fft,scf,clf,subplot,
+    plot,plot2d3,xgrid,xtitle,error,wavread,playsnd,atomsLoad,imread,
+    imshow,rgb2gray,histplot,matrix,double,pmodulo
+  },
+  sensitive=true,
+  morecomment=[l]{//},
+  morestring=[b]"
+}
+
+\lstset{
+    language=Scilab,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\bfseries,
+    commentstyle=\itshape,
+    stringstyle=\ttfamily,
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=8pt,
+    frame=single,
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    captionpos=b
+}
+
+\newcommand{\reportfigure}[4][0.92\textwidth]{%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=#1]{#2}
+    \caption{#3}
+    \label{#4}
+\end{figure}
+}
+
+\begin{document}
+
+% ============================================================
+% Cover
+% ============================================================
+\begin{center}
+    {\large \textbf{\coursename\ -- \semester\ -- \coursecode}}\\[1.2cm]
+
+    {\LARGE \textbf{DIGITAL SIGNAL PROCESSING LAB}}\\[1cm]
+    {\Large \textbf{\labtitle}}\\[1.5cm]
+
+    \begin{tabular}{>{\bfseries}l l}
+        Student: & \studentone \\
+    \end{tabular}
+\end{center}
+
+\vspace{1.2cm}
+
+\section*{Overview}
+This report studies the Z-transform and region of convergence (ROC) of
+several discrete-time signals and investigates practical signal-processing
+operations in Scilab. The experimental part includes audio analysis,
+image processing using the IPCV toolbox, linear convolution using both
+folding-and-shifting and matrix methods, and circular convolution using
+the same two approaches. Numerical results, graphical outputs, and
+energy calculations are used to verify the implementations.
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introduction}
+The Z-transform is an important tool for analyzing discrete-time signals
+and systems because it converts a time-domain sequence into a complex
+frequency-domain representation. In addition to the algebraic expression
+$X(z)$, the region of convergence is essential because it determines the
+set of values of $z$ for which the transform exists and helps distinguish
+between right-sided and left-sided sequences.
+
+Convolution is another fundamental DSP operation. Linear convolution
+models the output of an LTI system, while circular convolution is closely
+related to periodic sequences and discrete Fourier transform processing.
+This laboratory combines these theoretical concepts with practical
+experiments in Scilab, including audio and image data processing.
+
+% ============================================================
+\section{Objectives}
+The objectives of this laboratory are:
+\begin{itemize}[leftmargin=1.5em]
+    \item to analyze discrete-time signals using the Z-transform;
+    \item to determine the region of convergence for different signal types;
+    \item to investigate Scilab functions for audio processing;
+    \item to investigate image processing using the IPCV toolbox;
+    \item to derive and implement linear convolution using folding-and-shifting and matrix methods;
+    \item to derive and implement circular convolution using folding-and-shifting and matrix methods;
+    \item to compute and visualize the energy of the input and output sequences.
+\end{itemize}
+
+% ============================================================
+\section{Methodology}
+
+\subsection{Software Environment}
+The practical exercises were implemented in Scilab 2026.1.0. Built-in
+sound functions were used for audio processing. For image processing,
+the IPCV toolbox was installed and loaded through the ATOMS package
+manager. The convolution algorithms were implemented directly using
+loops, matrix operations, and discrete-time plots.
+
+\subsection{Z-transform Definition}
+For a discrete-time signal $x(n)$, the bilateral Z-transform is
+\[
+X(z)=\sum_{n=-\infty}^{\infty} x(n)z^{-n}.
+\]
+The ROC contains all values of $z$ for which this sum converges.
+For a right-sided exponential sequence,
+\[
+\mathcal{Z}\{a^n u(n)\}=\frac{1}{1-a z^{-1}},
+\qquad |z|>|a|.
+\]
+For a left-sided exponential sequence,
+\[
+\mathcal{Z}\{a^n u(-n-1)\}=-\frac{1}{1-a z^{-1}},
+\qquad |z|<|a|.
+\]
+
+% ============================================================
+\section{Experimental Content}
+
+% ------------------------------------------------------------
+\subsection{Exercise 1 -- Z-transform of a Finite-Duration Signal}
+The signal is
+\[
+x(n)=2\delta(n+2)-\delta(n+1)+2\delta(n)-3\delta(n-1)+4\delta(n-2).
+\]
+Using the shifting property of the impulse,
+\[
+\mathcal{Z}\{\delta(n-k)\}=z^{-k},
+\]
+we obtain
+\[
+\boxed{X(z)=2z^2-z+2-3z^{-1}+4z^{-2}}.
+\]
+
+The sequence is finite-duration and contains nonzero samples for both
+negative and positive values of $n$. Therefore, both $z=0$ and
+$z=\infty$ are excluded from the ROC:
+\[
+\boxed{0<|z|<\infty}.
+\]
+
+% ------------------------------------------------------------
+\subsection{Exercise 2 -- Sum of Two Right-Sided Exponentials}
+The signal is
+\[
+x(n)=(0.5)^n u(n)+(0.4)^n u(n).
+\]
+The Z-transform is
+\[
+X(z)=\frac{1}{1-0.5z^{-1}}+\frac{1}{1-0.4z^{-1}}.
+\]
+Combining the two terms gives
+\[
+\boxed{
+X(z)=\frac{2-0.9z^{-1}}
+{1-0.9z^{-1}+0.2z^{-2}}
+}.
+\]
+The individual ROCs are $|z|>0.5$ and $|z|>0.4$. Their intersection is
+\[
+\boxed{|z|>0.5}.
+\]
+
+% ------------------------------------------------------------
+\subsection{Exercise 3 -- Two-Sided Exponential Signal}
+The signal is
+\[
+x(n)=(0.5)^n u(n)+(0.9)^n u(-n-1).
+\]
+For the right-sided component,
+\[
+X_1(z)=\frac{1}{1-0.5z^{-1}},
+\qquad |z|>0.5.
+\]
+For the left-sided component,
+\[
+X_2(z)=-\frac{1}{1-0.9z^{-1}},
+\qquad |z|<0.9.
+\]
+Hence,
+\[
+\boxed{
+X(z)=\frac{1}{1-0.5z^{-1}}
+-\frac{1}{1-0.9z^{-1}}
+}
+\]
+and the overall ROC is the intersection
+\[
+\boxed{0.5<|z|<0.9}.
+\]
+This annular ROC is characteristic of a two-sided sequence.
+
+% ------------------------------------------------------------
+\subsection{Exercise 4 -- Audio Processing in Scilab}
+Scilab provides built-in functions for reading, playing, and analyzing
+audio signals. In this experiment, the built-in \texttt{chimes.wav}
+file was read using \texttt{wavread}. The first channel was selected for
+analysis, the time-domain waveform was plotted, and the FFT was used to
+obtain a magnitude spectrum.
+
+The experiment reported:
+\begin{itemize}
+    \item sampling frequency $F_s=22050$ Hz;
+    \item bit depth = 16 bits;
+    \item number of channels = 2;
+    \item samples per channel = 13921.
+\end{itemize}
+
+The waveform shows a short audio signal with several transient regions
+whose amplitudes decay with time. The magnitude spectrum contains several
+dominant peaks in the low-frequency range, which correspond to the main
+frequency components of the audio signal.
+
+\reportfigure[0.96\textwidth]{figures/ex4_audio.png}
+{Audio waveform, magnitude spectrum, and audio-file information obtained in Scilab.}
+{fig:ex4audio}
+
+\subsubsection*{Scilab source}
+\lstinputlisting[caption={Audio-processing script for Exercise 4.}]
+{code/ex4_audio_demo.sce}
+
+% ------------------------------------------------------------
+\subsection{Exercise 5 -- Image Processing with IPCV}
+The IPCV toolbox was used to demonstrate basic digital image processing.
+After the toolbox was loaded, the sample image \texttt{baboon.png} was
+read using \texttt{imread}. The original RGB image has size
+$512\times512\times3$. It was converted to a grayscale image of size
+$512\times512$ using \texttt{rgb2gray}. A histogram of grayscale
+intensities was then generated.
+
+The experiment demonstrates three common image-processing operations:
+reading an image, converting between color representations, and
+examining the intensity distribution with a histogram. The histogram
+shows that the image uses a broad range of gray levels, with relatively
+large populations in the middle and upper intensity ranges.
+
+\reportfigure[0.96\textwidth]{figures/ex5_image.png}
+{IPCV demonstration: original image, grayscale conversion, and grayscale histogram.}
+{fig:ex5image}
+
+\subsubsection*{Scilab source}
+\lstinputlisting[caption={Image-processing script for Exercise 5.}]
+{code/ex5_image_demo.sce}
+
+% ------------------------------------------------------------
+\subsection{Exercise 6 -- Linear Convolution}
+Let
+\[
+x(n)=[1,2,-3,2,1], \qquad h(n)=[1,0,-1],
+\]
+with the first element of each sequence located at $n=0$.
+
+\subsubsection{Convergence of the Convolution Sum}
+The linear convolution is
+\[
+y(n)=\sum_{k=-\infty}^{\infty} h(k)x(n-k).
+\]
+
+If both $h(n)$ and $x(n)$ are causal, then $h(k)=0$ for $k<0$, and
+$x(n-k)=0$ when $k>n$. Hence, for $n\ge0$,
+\[
+\boxed{y(n)=\sum_{k=0}^{n} h(k)x(n-k)},
+\]
+while $y(n)=0$ for $n<0$. For every fixed $n$, only finitely many terms
+are nonzero.
+
+If the system has a finite impulse response satisfying
+\[
+h(n)=0,\qquad n<0\ \text{or}\ n>M,
+\]
+then only $k=0,1,\ldots,M$ contribute to the convolution. Therefore,
+\[
+\boxed{y(n)=\sum_{k=0}^{M} h(k)x(n-k)}.
+\]
+Again, the convolution contains only $M+1$ terms for each $n$.
+
+\subsubsection{Folding-and-Shifting Method}
+For the given impulse response,
+\[
+h(0)=1,\qquad h(1)=0,\qquad h(2)=-1.
+\]
+Therefore,
+\[
+y(n)=x(n)-x(n-2).
+\]
+Evaluating the sum for $n=0,\ldots,6$ gives
+\[
+\boxed{y(n)=[1,2,-4,0,4,-2,-1]}.
+\]
+
+The signal energies are
+\[
+E_x=\sum_n |x(n)|^2
+=1^2+2^2+(-3)^2+2^2+1^2
+=\boxed{19},
+\]
+\[
+E_y=\sum_n |y(n)|^2
+=\boxed{42}.
+\]
+
+\reportfigure[0.96\textwidth]{figures/ex6_folding_shifting.png}
+{Linear convolution using the folding-and-shifting implementation. The figure also shows the energy per sample.}
+{fig:ex6fold}
+
+\subsubsection*{Scilab source -- folding and shifting}
+\lstinputlisting[caption={Linear convolution using folding and shifting.}]
+{code/ex6_linear_folding_shifting.sce}
+
+\subsubsection{Matrix Method}
+A convolution matrix can be constructed from $x(n)$:
+\[
+\mathbf{X}=
+\begin{bmatrix}
+1&0&0\\
+2&1&0\\
+-3&2&1\\
+2&-3&2\\
+1&2&-3\\
+0&1&2\\
+0&0&1
+\end{bmatrix},
+\qquad
+\mathbf{h}=
+\begin{bmatrix}
+1\\0\\-1
+\end{bmatrix}.
+\]
+Then
+\[
+\mathbf{y}=\mathbf{X}\mathbf{h}
+=
+\begin{bmatrix}
+1\\2\\-4\\0\\4\\-2\\-1
+\end{bmatrix}.
+\]
+Thus the matrix method gives the same result as the folding-and-shifting
+method:
+\[
+\boxed{y(n)=[1,2,-4,0,4,-2,-1]}.
+\]
+
+\reportfigure[0.72\textwidth]{figures/ex6_matrix.png}
+{Linear-convolution matrix and output obtained with the matrix method.}
+{fig:ex6matrix}
+
+\subsubsection*{Scilab source -- matrix method}
+\lstinputlisting[caption={Linear convolution using the matrix method.}]
+{code/ex6_linear_matrix.sce}
+
+% ------------------------------------------------------------
+\subsection{Exercise 7 -- Circular Convolution}
+For a periodic sequence $x(n)$ with period $N$,
+\[
+x(n)=x(n+qN),\qquad q\in\mathbb{Z}.
+\]
+Therefore, every integer index $n-k$ can be mapped into the interval
+$0,1,\ldots,N-1$ using its remainder modulo $N$:
+\[
+x(n-k)=x[(n-k)\bmod N].
+\]
+If $h(k)$ is nonzero only for $k=0,1,\ldots,M-1$, the convolution over
+one period is consequently
+\[
+\boxed{
+y(n)=\sum_{k=0}^{M-1} h(k)x[(n-k)\bmod N]
+}.
+\]
+This explains the circular-convolution expression used in the exercise.
+
+For
+\[
+x(n)=[1,2,-3,2,1],
+\]
+\[
+h(n)=[1,0,-1,-1,1],
+\]
+and $N=5$, both sequences have length five.
+
+\subsubsection{Folding-and-Shifting Method}
+Using the modulo index in the circular convolution sum gives
+\[
+\boxed{y(n)=[4,-4,-3,0,3]}.
+\]
+The energies are
+\[
+\boxed{E_x=19}, \qquad \boxed{E_y=50}.
+\]
+
+In Scilab, \texttt{pmodulo} is used rather than \texttt{modulo} so that
+negative values of $n-k$ are mapped to the nonnegative range
+$0,1,\ldots,N-1$. This avoids invalid array indices.
+
+\reportfigure[0.96\textwidth]{figures/ex7_folding_shifting.png}
+{Circular convolution using folding and shifting. The console confirms $y(n)=[4,-4,-3,0,3]$, $E_x=19$, and $E_y=50$.}
+{fig:ex7fold}
+
+\subsubsection*{Scilab source -- folding and shifting}
+\lstinputlisting[caption={Circular convolution using folding and shifting.}]
+{code/ex7_circular_folding_shifting.sce}
+
+\subsubsection{Matrix Method}
+The circular-convolution matrix generated from $h(n)$ is
+\[
+\mathbf{H}_c=
+\begin{bmatrix}
+1&1&-1&-1&0\\
+0&1&1&-1&-1\\
+-1&0&1&1&-1\\
+-1&-1&0&1&1\\
+1&-1&-1&0&1
+\end{bmatrix}.
+\]
+With
+\[
+\mathbf{x}=
+\begin{bmatrix}
+1\\2\\-3\\2\\1
+\end{bmatrix},
+\]
+we obtain
+\[
+\mathbf{y}=\mathbf{H}_c\mathbf{x}
+=
+\begin{bmatrix}
+4\\-4\\-3\\0\\3
+\end{bmatrix}.
+\]
+Thus, the matrix method verifies the result of the folding-and-shifting
+method exactly.
+
+\reportfigure[0.72\textwidth]{figures/ex7_matrix.png}
+{Circular-convolution matrix and output obtained with the matrix method.}
+{fig:ex7matrix}
+
+\subsubsection*{Scilab source -- matrix method}
+\lstinputlisting[caption={Circular convolution using the matrix method.}]
+{code/ex7_circular_matrix.sce}
+
+% ============================================================
+\section{Discussion}
+The theoretical Z-transform exercises show that the ROC is an essential
+part of the transform description. Exercise 2 is purely right-sided and
+therefore has an ROC outside its outermost pole, whereas Exercise 3 is
+two-sided and has an annular ROC between the two pole magnitudes.
+
+The audio and image experiments demonstrate that Scilab can process
+real digital data in addition to numerical sequences. The audio example
+combines time-domain inspection with frequency-domain analysis through
+the FFT, while the image example uses IPCV to perform grayscale
+conversion and histogram analysis.
+
+For Exercise 6, both linear-convolution implementations produced
+\([1,2,-4,0,4,-2,-1]\), confirming the correctness of the folding-and-
+shifting and matrix approaches. For Exercise 7, both circular-
+convolution implementations produced \([4,-4,-3,0,3]\). The use of
+\texttt{pmodulo} is important in Scilab because it maps negative circular
+indices into valid nonnegative remainders before conversion to Scilab's
+one-based array indexing.
+
+Overall, all required theoretical results and practical Scilab
+experiments were completed successfully, and the numerical outputs from
+independent methods agree with each other.
+
+% ============================================================
+\section{References}
+\begin{enumerate}
+    \item Digital Signal Processing, Lab \#4 handout, course material.
+    \item Scilab Help System, sound-processing functions including \texttt{wavread}, \texttt{fft}, and \texttt{playsnd}.
+    \item IPCV -- Image Processing and Computer Vision Toolbox for Scilab.
+\end{enumerate}
+
+\end{document}
